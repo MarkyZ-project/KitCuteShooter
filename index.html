@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KIT CUTE SHOOTER 🚀</title>
+<style>
+body {
+    margin: 0;
+    background: #050014;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+    color: white;
+}
+#startScreen, #gameOver, #levelMenu, #endScreen {
+    position: absolute;
+    text-align: center;
+}
+#startScreen h1, #levelMenu h1 {
+    font-size: 40px;
+    margin-bottom: 20px;
+}
+#gameOver, #endScreen {
+    display: none;
+    font-size: 48px;
+    color: #ff4081;
+    animation: pop 0.8s ease;
+}
+#endScreen p {
+    font-size: 28px;
+    color: #ffeb3b;
+    max-width: 90%;
+    margin: 20px auto 0 auto;
+}
+@keyframes pop {
+    from { transform: scale(0.5); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+button {
+    font-size: 22px;
+    padding: 12px 30px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    background: #ff69b4;
+    color: #111;
+    margin-top: 10px;
+}
+canvas {
+    display: none;
+    background: radial-gradient(circle at bottom, #0a0033, #000);
+}
+#enemyCounter {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 24px;
+}
+</style>
+</head>
+<body>
+
+<div id="startScreen">
+    <h1>KIT CUTE SHOOTER 🚀</h1>
+    <button id="startBtn">START LVL1</button>
+</div>
+
+<div id="levelMenu" style="display:none;">
+    <h1>Choose Level</h1>
+    <button class="lvlBtn" data-lvl="1">START LVL1</button>
+    <button class="lvlBtn" data-lvl="2">START LVL2</button>
+    <button class="lvlBtn" data-lvl="3">START LVL3</button>
+</div>
+
+<div id="gameOver">
+    GAMEOVER SILLY 💀
+    <br>
+    <button id="backMenuBtn">Torna al Menu</button>
+</div>
+
+<div id="endScreen">
+    <h1>Congratulations! 🎉</h1>
+    <p>I will always help you love, I hope you enjoyed this little game, I will update it continuously so when you have blackout you can play it if you want 😘☺️</p>
+    <button id="backToMenuEnd">Back to Menu</button>
+</div>
+
+<div id="enemyCounter">Enemies Left: 0</div>
+
+<canvas id="game" width="400" height="600"></canvas>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+/* IMMAGINI */
+const playerImg = new Image();
+playerImg.src = "SPACE.png";
+
+const enemyImages = [];
+for (let i = 1; i <= 12; i++) {
+    const img = new Image();
+    img.src = `img${i}.png.webp`;
+    enemyImages.push(img);
+}
+
+/* GAME STATE */
+let gameRunning = false;
+let level = 1;
+let totalEnemies = 0;
+let enemiesLeft = 0;
+let enemies = [];
+let enemySpawnIntervalId = null;
+
+/* PLAYER */
+const player = { x: canvas.width / 2 - 25, y: canvas.height - 70, w: 50, h: 50 };
+let mouseX = canvas.width / 2;
+
+/* INPUT */
+canvas.addEventListener("mousemove", e => {
+    const rect = canvas.getBoundingClientRect();
+    mouseX = e.clientX - rect.left;
+});
+
+/* BULLETS */
+const bullets = [];
+const BULLET_SPEED = 7;
+const FIRE_RATE = 200; // 5 colpi/sec
+
+setInterval(() => {
+    if (!gameRunning) return;
+    bullets.push({x: player.x + player.w/2, y: player.y, r: 4});
+}, FIRE_RATE);
+
+/* SPAWN NEMICI */
+function spawnEnemiesForLevel(lvl){
+    // Pulizia array e intervalli precedenti
+    enemies = [];
+    if(enemySpawnIntervalId) clearInterval(enemySpawnIntervalId);
+
+    let num, speed;
+    if(lvl===1){ num=15; speed=0.5; }
+    else if(lvl===2){ num=32; speed=0.7; }
+    else { num=50; speed=0.9; }
+
+    totalEnemies = num;
+    enemiesLeft = num;
+
+    const tempEnemies = [];
+    for(let i=0;i<num;i++){
+        tempEnemies.push({
+            x: Math.random()*(canvas.width-40),
+            y: -50,
+            w:40,
+            h:40,
+            img: enemyImages[Math.floor(Math.random()*enemyImages.length)],
+            life:2,
+            speed: speed
+        });
+    }
+
+    let spawnIndex = 0;
+    enemySpawnIntervalId = setInterval(()=>{
+        if(spawnIndex < tempEnemies.length){
+            enemies.push(tempEnemies[spawnIndex]);
+            spawnIndex++;
+        } else clearInterval(enemySpawnIntervalId);
+        document.getElementById("enemyCounter").innerText="Enemies Left: "+enemiesLeft;
+    }, 600);
+}
+
+/* PARTICELLE */
+const particles=[];
+function spawnParticles(x,y,color){
+    for(let i=0;i<10;i++){
+        particles.push({
+            x,y,
+            dx:(Math.random()-0.5)*4,
+            dy:(Math.random()-0.5)*4,
+            life:20,
+            color
+        });
+    }
+}
+
+/* DRAW */
+function drawPlayer(){ ctx.drawImage(playerImg, player.x, player.y, player.w, player.h); }
+function drawBullets(){
+    ctx.fillStyle="#ff69b4";
+    bullets.forEach(b=>{
+        ctx.beginPath();
+        ctx.arc(b.x,b.y,b.r,0,Math.PI*2);
+        ctx.fill();
+    });
+}
+function drawEnemies(){ enemies.forEach(e=>ctx.drawImage(e.img,e.x,e.y,e.w,e.h)); }
+function drawParticles(){
+    particles.forEach((p,i)=>{
+        ctx.fillStyle=p.color;
+        ctx.fillRect(p.x,p.y,3,3);
+        p.x+=p.dx; p.y+=p.dy; p.life--;
+        if(p.life<=0) particles.splice(i,1);
+    });
+}
+
+/* GAME OVER */
+function gameOver(){
+    gameRunning=false;
+    canvas.style.display="none";
+    if(enemySpawnIntervalId) clearInterval(enemySpawnIntervalId);
+    document.getElementById("gameOver").style.display="block";
+}
+
+/* LEVEL COMPLETE */
+function levelComplete(){
+    gameRunning=false;
+    canvas.style.display="none";
+    if(enemySpawnIntervalId) clearInterval(enemySpawnIntervalId);
+
+    if(level<3){
+        document.getElementById("levelMenu").style.display="block";
+    } else {
+        document.getElementById("endScreen").style.display="block";
+    }
+}
+
+/* UPDATE */
+function update(){
+    if(!gameRunning) return;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    player.x += (mouseX - player.x - player.w/2)*0.15;
+
+    drawPlayer();
+    drawBullets();
+    drawEnemies();
+    drawParticles();
+
+    bullets.forEach((b,bi)=>{
+        b.y -= BULLET_SPEED;
+        if(b.y<0) bullets.splice(bi,1);
+    });
+
+    enemies.forEach((e,ei)=>{
+        e.y += e.speed;
+        if(e.x<player.x+player.w && e.x+e.w>player.x && e.y<player.y+player.h && e.y+e.h>player.y){
+            gameOver();
+        }
+        if(e.y + e.h >= canvas.height){
+            gameOver();
+        }
+        bullets.forEach((b,bi)=>{
+            if(b.x>e.x && b.x<e.x+e.w && b.y>e.y && b.y<e.y+e.h){
+                bullets.splice(bi,1);
+                e.life--;
+                spawnParticles(b.x,b.y,"#ff69b4");
+                if(e.life<=0){
+                    spawnParticles(e.x+20,e.y+20,"#ffffff");
+                    enemies.splice(ei,1);
+                    enemiesLeft--;
+                    document.getElementById("enemyCounter").innerText="Enemies Left: "+enemiesLeft;
+                }
+            }
+        });
+    });
+
+    if(enemiesLeft<=0){
+        levelComplete();
+    }
+
+    requestAnimationFrame(update);
+}
+
+/* START BUTTON */
+document.getElementById("startBtn").addEventListener("click",()=>{
+    document.getElementById("startScreen").style.display="none";
+    canvas.style.display="block";
+    bullets.length=0;
+    level=1;
+    spawnEnemiesForLevel(level);
+    gameRunning=true;
+    update();
+});
+
+/* GAMEOVER MENU BUTTON */
+document.getElementById("backMenuBtn").addEventListener("click", () => {
+    document.getElementById("gameOver").style.display="none";
+    document.getElementById("levelMenu").style.display="block";
+    canvas.style.display = "none";
+
+    bullets.length = 0;
+    enemies.length = 0;
+    enemiesLeft = 0;
+    totalEnemies = 0;
+    gameRunning = false;
+    if(enemySpawnIntervalId) clearInterval(enemySpawnIntervalId);
+});
+
+/* END SCREEN BUTTON */
+document.getElementById("backToMenuEnd").addEventListener("click", () => {
+    document.getElementById("endScreen").style.display="none";
+    document.getElementById("startScreen").style.display="block";
+});
+
+/* LEVEL MENU BUTTONS */
+document.querySelectorAll(".lvlBtn").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+        level = parseInt(btn.dataset.lvl);
+        document.getElementById("levelMenu").style.display="none";
+        canvas.style.display="block";
+        bullets.length=0;
+        enemies.length=0;
+        enemiesLeft=0;
+        spawnEnemiesForLevel(level);
+        gameRunning=true;
+        update();
+    });
+});
+</script>
+
+</body>
+</html>
