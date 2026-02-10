@@ -75,6 +75,9 @@ canvas {
     <button class="lvlBtn" data-lvl="1">START LVL1</button>
     <button class="lvlBtn" data-lvl="2">START LVL2</button>
     <button class="lvlBtn" data-lvl="3">START LVL3</button>
+    <button class="lvlBtn" data-lvl="4">START LVL4</button>
+<button class="lvlBtn" data-lvl="5">START LVL5</button>
+
 </div>
 
 <div id="gameOver">
@@ -115,6 +118,10 @@ let totalEnemies = 0;
 let enemiesLeft = 0;
 let enemies = [];
 let enemySpawnIntervalId = null;
+let enemyShotIntervalId = null;
+const enemyShots = [];
+const ENEMY_SHOT_SPEED = 4;
+
 
 /* PLAYER */
 const player = { x: canvas.width / 2 - 25, y: canvas.height - 70, w: 50, h: 50 };
@@ -142,10 +149,14 @@ function spawnEnemiesForLevel(lvl){
     enemies = [];
     if(enemySpawnIntervalId) clearInterval(enemySpawnIntervalId);
 
-    let num, speed;
-    if(lvl===1){ num=15; speed=0.5; }
-    else if(lvl===2){ num=32; speed=0.7; }
-    else { num=50; speed=0.9; }
+let num, speed;
+if(lvl===1){ num=15; speed=0.5; }
+else if(lvl===2){ num=32; speed=0.5; }
+else if(lvl===3){ num=50; speed=0.5; }
+else if(lvl===4){ num=75; speed=0.5; }
+else if(lvl===5){ num=100; speed=0.5; }
+
+
 
     totalEnemies = num;
     enemiesLeft = num;
@@ -162,6 +173,25 @@ function spawnEnemiesForLevel(lvl){
             speed: speed
         });
     }
+    if (enemyShotIntervalId) {
+    clearInterval(enemyShotIntervalId);
+    enemyShotIntervalId = null;
+}
+
+if (lvl === 4 || lvl === 5) {
+    enemyShotIntervalId = setInterval(() => {
+        const shotsToSpawn = (lvl === 5) ? 2 : 1;
+
+        for (let i = 0; i < shotsToSpawn; i++) {
+            enemyShots.push({
+                x: Math.random() * canvas.width,
+                y: -10,
+                r: 6
+            });
+        }
+    }, 2000);
+}
+
 
     let spawnIndex = 0;
     enemySpawnIntervalId = setInterval(()=>{
@@ -196,6 +226,15 @@ function drawBullets(){
         ctx.arc(b.x,b.y,b.r,0,Math.PI*2);
         ctx.fill();
     });
+    function drawEnemyShots(){
+    ctx.fillStyle = "#ff0000";
+    enemyShots.forEach(s=>{
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+        ctx.fill();
+    });
+}
+
 }
 function drawEnemies(){ enemies.forEach(e=>ctx.drawImage(e.img,e.x,e.y,e.w,e.h)); }
 function drawParticles(){
@@ -213,6 +252,9 @@ function gameOver(){
     canvas.style.display="none";
     if(enemySpawnIntervalId) clearInterval(enemySpawnIntervalId);
     document.getElementById("gameOver").style.display="block";
+    enemyShots.length = 0;
+if (enemyShotIntervalId) clearInterval(enemyShotIntervalId);
+
 }
 
 /* LEVEL COMPLETE */
@@ -220,13 +262,16 @@ function levelComplete(){
     gameRunning=false;
     canvas.style.display="none";
     if(enemySpawnIntervalId) clearInterval(enemySpawnIntervalId);
+    if(enemyShotIntervalId) clearInterval(enemyShotIntervalId);
+    enemyShots.length = 0;
 
-    if(level<3){
+    if(level < 5){
         document.getElementById("levelMenu").style.display="block";
     } else {
         document.getElementById("endScreen").style.display="block";
     }
 }
+
 
 /* UPDATE */
 function update(){
@@ -237,6 +282,26 @@ function update(){
 
     drawPlayer();
     drawBullets();
+    drawEnemyShots();
+
+    enemyShots.forEach((s, si) => {
+    s.y += ENEMY_SHOT_SPEED;
+
+    if (
+        s.x > player.x &&
+        s.x < player.x + player.w &&
+        s.y > player.y &&
+        s.y < player.y + player.h
+    ) {
+        gameOver();
+    }
+
+    if (s.y > canvas.height) {
+        enemyShots.splice(si, 1);
+    }
+});
+
+
     drawEnemies();
     drawParticles();
 
@@ -299,6 +364,17 @@ document.getElementById("backMenuBtn").addEventListener("click", () => {
     gameRunning = false;
     if(enemySpawnIntervalId) clearInterval(enemySpawnIntervalId);
 });
+function drawEnemyShots(){
+    ctx.fillStyle = "#ff0000";
+    enemyShots.forEach(s=>{
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+        ctx.fill();
+    });
+}
+
+
+
 
 /* END SCREEN BUTTON */
 document.getElementById("backToMenuEnd").addEventListener("click", () => {
