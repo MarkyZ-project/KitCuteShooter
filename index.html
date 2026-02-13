@@ -77,6 +77,12 @@ canvas {
     <button class="lvlBtn" data-lvl="3">START LVL3</button>
     <button class="lvlBtn" data-lvl="4">START LVL4</button>
 <button class="lvlBtn" data-lvl="5">START LVL5</button>
+<button class="lvlBtn" data-lvl="6">START LVL6</button>
+<button class="lvlBtn" data-lvl="7">START LVL7</button>
+<button class="lvlBtn" data-lvl="8">START LVL8</button>
+<button class="lvlBtn" data-lvl="9">START LVL9</button>
+<button class="lvlBtn" data-lvl="10">START LVL10</button>
+
 
 </div>
 
@@ -150,11 +156,18 @@ function spawnEnemiesForLevel(lvl){
     if(enemySpawnIntervalId) clearInterval(enemySpawnIntervalId);
 
 let num, speed;
+
 if(lvl===1){ num=15; speed=0.5; }
 else if(lvl===2){ num=32; speed=0.5; }
 else if(lvl===3){ num=50; speed=0.5; }
-else if(lvl===4){ num=75; speed=0.5; }
+else if(lvl===4){ num=75; speed=0.6; }
 else if(lvl===5){ num=100; speed=0.5; }
+else if(lvl===6){ num=135; speed=0.5; }
+else if(lvl===7){ num=150; speed=0.5; }
+else if(lvl===8){ num=200; speed=0.5; }
+else if(lvl===9){ num=250; speed=0.5; }
+else if(lvl===10){ num=300; speed=0.5; } // puoi cambiare
+
 
 
 
@@ -178,9 +191,27 @@ else if(lvl===5){ num=100; speed=0.5; }
     enemyShotIntervalId = null;
 }
 
-if (lvl === 4 || lvl === 5) {
+if (enemyShotIntervalId) {
+    clearInterval(enemyShotIntervalId);
+    enemyShotIntervalId = null;
+}
+
+let shotsToSpawn = 0;
+let intervalTime = 2000;
+
+if (lvl === 4) shotsToSpawn = 1;
+else if (lvl === 5) shotsToSpawn = 2;
+else if (lvl === 6) shotsToSpawn = 3;
+else if (lvl === 7) {
+    shotsToSpawn = 2;
+    intervalTime = 1000; // 2 al secondo
+}
+else if (lvl === 8) shotsToSpawn = 4;
+else if (lvl === 9) shotsToSpawn = 5;
+else if (lvl === 10) shotsToSpawn = 6;
+
+if (shotsToSpawn > 0) {
     enemyShotIntervalId = setInterval(() => {
-        const shotsToSpawn = (lvl === 5) ? 2 : 1;
 
         for (let i = 0; i < shotsToSpawn; i++) {
             enemyShots.push({
@@ -189,8 +220,10 @@ if (lvl === 4 || lvl === 5) {
                 r: 6
             });
         }
-    }, 2000);
+
+    }, intervalTime);
 }
+
 
 
     let spawnIndex = 0;
@@ -265,12 +298,13 @@ function levelComplete(){
     if(enemyShotIntervalId) clearInterval(enemyShotIntervalId);
     enemyShots.length = 0;
 
-    if(level < 5){
+    if(level < 10){
         document.getElementById("levelMenu").style.display="block";
     } else {
         document.getElementById("endScreen").style.display="block";
     }
 }
+
 
 
 /* UPDATE */
